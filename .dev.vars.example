@@ -1,0 +1,4 @@
+# Cloudflare API token with only the permissions your agents need.
+CLOUDFLARE_API_TOKEN=replace-me
+# Random secret of at least 32 characters. Agents use it to connect.
+MCP_ACCESS_KEY=replace-me

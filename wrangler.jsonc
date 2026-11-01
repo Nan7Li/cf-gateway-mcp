@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "cf-gateway-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  // No id on purpose: Wrangler creates the namespace on first deploy, so this file holds no account data.
+  "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+  "ratelimits": [
+    {
+      "name": "AUTH_LIMITER",
+      "namespace_id": "7341",
+      "simple": { "limit": 20, "period": 60 }
+    }
+  ]
+}

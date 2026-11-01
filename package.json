@@ -1,0 +1,33 @@
+{
+    "name":  "cf-gateway-mcp",
+    "version":  "0.1.0",
+    "description":  "Self-hosted MCP server on Cloudflare Workers: store one Cloudflare API token, let any agent use it without seeing it.",
+    "private":  true,
+    "license":  "MIT",
+    "type":  "module",
+    "engines":  {
+                    "node":  "\u003e=20"
+                },
+    "scripts":  {
+                    "setup":  "node scripts/setup.mjs",
+                    "rotate-key":  "node scripts/rotate-key.mjs",
+                    "dev":  "wrangler dev",
+                    "deploy":  "wrangler deploy",
+                    "typecheck":  "tsc --noEmit",
+                    "test":  "vitest run \u0026\u0026 node --test test/node/agents.test.mjs",
+                    "test:e2e":  "node test/e2e/run.mjs"
+                },
+    "dependencies":  {
+                         "@cloudflare/workers-oauth-provider":  "^1.2.4",
+                         "@modelcontextprotocol/sdk":  "^1.32.2",
+                         "jsonc-parser":  "^3.3.1",
+                         "zod":  "^4.6.7"
+                     },
+    "devDependencies":  {
+                            "wrangler":  "4.156.0",
+                            "vitest":  "^5.0.0",
+                            "@cloudflare/vitest-plugin":  "1.4.11",
+                            "typescript":  "^5.9.0",
+                            "@cloudflare/workers-types":  "^5.20261101.1"
+                        }
+}
