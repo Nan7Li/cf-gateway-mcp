@@ -11,10 +11,11 @@
     "scripts":  {
                     "setup":  "node scripts/setup.mjs",
                     "rotate-key":  "node scripts/rotate-key.mjs",
+                    "connect-github":  "node scripts/connect-github.mjs",
                     "dev":  "wrangler dev",
                     "deploy":  "wrangler deploy",
                     "typecheck":  "tsc --noEmit",
-                    "test":  "vitest run \u0026\u0026 node --test test/node/agents.test.mjs",
+                    "test":  "vitest run \u0026\u0026 node --test test/node/agents.test.mjs test/node/gateway.test.mjs",
                     "test:e2e":  "node test/e2e/run.mjs"
                 },
     "dependencies":  {

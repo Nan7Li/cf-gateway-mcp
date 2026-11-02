@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -25,16 +25,58 @@ export function ask(question) {
   });
 }
 
+/** Echoes * per character: with no feedback at all, people cannot tell whether a paste landed. */
 export function askHidden(question) {
-  return new Promise((resolve) => {
-    process.stdout.write(question);
-    const muted = new Writable({ write: (_chunk, _encoding, done) => done() });
-    const rl = createInterface({ input: process.stdin, output: muted, terminal: Boolean(process.stdin.isTTY) });
-    rl.question("", (answer) => {
-      rl.close();
-      process.stdout.write("\n");
-      resolve(answer.trim());
+  process.stdout.write(question);
+  if (!process.stdin.isTTY) {
+    return new Promise((resolve) => {
+      const muted = new Writable({ write: (_chunk, _encoding, done) => done() });
+      const rl = createInterface({ input: process.stdin, output: muted, terminal: false });
+      rl.question("", (answer) => {
+        rl.close();
+        process.stdout.write("\n");
+        resolve(answer.trim());
+      });
     });
+  }
+  return new Promise((resolve) => {
+    const { stdin, stdout } = process;
+    let value = "";
+    const erase = (count) => stdout.write("\b \b".repeat(count));
+    const onData = (chunk) => {
+      // Terminals may wrap a paste in bracketed-paste markers.
+      for (const char of chunk.replace(/\x1b\[20[01]~/g, "")) {
+        if (char === "\r" || char === "\n") {
+          stdin.setRawMode(false);
+          stdin.off("data", onData);
+          stdin.pause();
+          stdout.write("\n");
+          resolve(value.trim());
+          return;
+        }
+        if (char === "\u0003") {
+          stdin.setRawMode(false);
+          stdout.write("\n");
+          process.exit(130);
+        }
+        if (char === "\u0015") {
+          erase(value.length);
+          value = "";
+        } else if (char === "\u007f" || char === "\b") {
+          if (value) {
+            erase(1);
+            value = value.slice(0, -1);
+          }
+        } else if (char >= " ") {
+          value += char;
+          stdout.write("*");
+        }
+      }
+    };
+    stdin.setRawMode(true);
+    stdin.setEncoding("utf8");
+    stdin.resume();
+    stdin.on("data", onData);
   });
 }
 
@@ -125,9 +167,23 @@ export function readState() {
   return existsSync(STATE_FILE) ? JSON.parse(readFileSync(STATE_FILE, "utf8")) : null;
 }
 
-/** Holds no secrets: only where the Worker lives, for rotate-key. */
+/** Holds no secrets: only where things live, for rotate-key and connect-github. Merges into what is there. */
 export function writeState(state) {
-  writeFileSync(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
+  writeFileSync(STATE_FILE, `${JSON.stringify({ ...readState(), ...state }, null, 2)}\n`);
+}
+
+/** Sends the key over stdin, so it never reaches an argument list. */
+export function setRequestsRepoKey(repo, key) {
+  const result = spawnSync("gh", ["secret", "set", "MCP_ACCESS_KEY", "--repo", repo], { input: key, encoding: "utf8" });
+  if (result.status !== 0) throw new Error(`could not store the key in ${repo}: ${result.stderr.trim()}`);
+}
+
+/** A new access key would otherwise silently break the requests repository. */
+export function updateRequestsRepoKey(key) {
+  const repo = readState()?.requestsRepo;
+  if (!repo) return;
+  setRequestsRepoKey(repo, key);
+  console.log(`  OK      GitHub requests repository: ${repo}`);
 }
 
 export function printAgentResults(results) {

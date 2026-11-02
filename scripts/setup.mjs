@@ -9,6 +9,7 @@ import {
   isTokenValid,
   printAgentResults,
   putSecrets,
+  updateRequestsRepoKey,
   waitForServer,
   wrangler,
   writeState,
@@ -49,7 +50,7 @@ async function main() {
   await ensureWranglerLogin();
 
   console.log("Create a token at https://dash.cloudflare.com/profile/api-tokens with only the permissions your agents need.");
-  const token = await askHidden("Paste the Cloudflare API token (input is hidden): ");
+  const token = await askHidden("Paste the Cloudflare API token, then press Enter (shown as *): ");
   if (!token) throw new Error("empty token");
 
   const accountId = await chooseAccount(await fetchAccounts(token));
@@ -71,6 +72,7 @@ async function main() {
 
   console.log("Registering with your agents:");
   printAgentResults(registerAgents({ home: homedir(), url, key }));
+  updateRequestsRepoKey(key);
 
   console.log(`
 Done. Restart any agent that is already open.

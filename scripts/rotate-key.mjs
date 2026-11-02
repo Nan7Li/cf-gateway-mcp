@@ -1,7 +1,7 @@
 // Replaces the access key, updates local agents, and cuts off every existing OAuth grant.
 import { homedir } from "node:os";
 import { registerAgents } from "./lib/agents.mjs";
-import { generateKey, printAgentResults, putSecrets, readState, waitForServer } from "./lib/common.mjs";
+import { generateKey, printAgentResults, putSecrets, readState, updateRequestsRepoKey, waitForServer } from "./lib/common.mjs";
 
 async function main() {
   const state = readState();
@@ -14,6 +14,7 @@ async function main() {
 
   console.log("Updating your agents:");
   printAgentResults(registerAgents({ home: homedir(), url: state.url, key }));
+  updateRequestsRepoKey(key);
   console.log(`
 Done. Restart any agent that is already open. Web clients must authorize again.
 

@@ -1,0 +1,28 @@
+name: Cloudflare gateway
+
+on:
+  issues:
+    types: [opened, labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  handle:
+    if: github.event.action == 'opened' || github.event.label.name == 'approved'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      # The issue body is read from the event file by the script, never interpolated here.
+      - run: node .github/gateway/handle.mjs
+        env:
+          MCP_URL: ${{ vars.MCP_URL }}
+          MCP_ACCESS_KEY: ${{ secrets.MCP_ACCESS_KEY }}
+          REQUIRE_APPROVAL: ${{ vars.REQUIRE_APPROVAL }}
+          GITHUB_TOKEN: ${{ github.token }}

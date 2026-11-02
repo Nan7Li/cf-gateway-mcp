@@ -24,7 +24,7 @@ npm run setup
 `npm run setup` 會：
 
 1. 請你登入 Cloudflare（需要時才開瀏覽器）
-2. 請你貼上 API token（輸入時不顯示），驗證通過才繼續
+2. 請你貼上 API token（畫面只顯示星號），驗證通過才繼續
 3. 部署 Worker，產生隨機存取密碼，把兩者存成 Worker Secret
 4. 確認伺服器能用，然後註冊到本機的 Claude Code、Codex、Gemini CLI、opencode（改動前會備份成 `*.cf-gateway.bak`）
 5. 顯示 MCP 網址和存取密碼
@@ -54,6 +54,36 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 Authorization: Bearer <存取密碼>
 ```
+
+## 只有 GitHub 連接器的 agent
+
+有些 agent 連不到 MCP，只有 GitHub 連接器。跑下面的指令，會建立你專屬的私有倉庫 `cf-gateway-requests`：
+
+```bash
+npm run connect-github
+```
+
+之後跟 agent 說「讀 `你的帳號/cf-gateway-requests` 的 README 來用 Cloudflare」就好。
+
+```
+agent 開 Issue ──> GitHub Actions ──> 你的 Worker ──> Cloudflare
+     ▲                                     │
+     └───────── 結果寫回 Issue 留言 <────────┘
+```
+
+存取密碼存成加密的 Actions Secret，agent 讀不到。Cloudflare token 還是只在 Worker 裡。
+
+- **需要的權限：** 連接器要能讀寫這個倉庫的 Issue。只授權特定倉庫的話，要把它加進去。
+- **審核：** 查詢直接執行，修改和刪除要等你在 GitHub 上加 `approved` 標籤。把倉庫變數 `REQUIRE_APPROVAL` 設成 `false` 可以關掉。
+- **額度：** 每次請求至少算 1 分鐘，私有倉庫的免費方案大約每月 2000 次。
+- **大小：** Issue 上限約 65,000 字元，所以大一點的 Worker 無法用這個方式部署。
+
+**風險：能在這個倉庫開 Issue，就能用這把 Cloudflare token。** 審核能擋誤觸和一般的誘騙，但擋不住以下情況：
+
+- 連接器如果不是以 GitHub App 身分操作，看起來就和你本人一樣，可以自己批准。
+- 連接器如果能寫入倉庫內容和 workflow，可以直接改掉 Actions，繞過審核並取得存取密碼。
+
+倉庫必須保持私有。如果改成公開，轉送會拒絕執行。
 
 ## 工具
 
